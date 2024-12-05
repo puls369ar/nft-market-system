@@ -36,7 +36,7 @@ contract NFTFactory is Ownable {
         string[] memory _tags,
         string memory _baseURI,
         uint96 _royalty
-    ) external onlyOwner returns(uint256) {
+    ) external returns(uint256) {
         
         SuperwineNFT collection = new SuperwineNFT(_name, _symbol, _baseURI, feeCollector, _royalty);
         collections[collectionCount++] = Collection({
