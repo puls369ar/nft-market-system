@@ -1,14 +1,13 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Royalty.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-contract SuperwineNFT is ERC721Enumerable, Ownable {
-    struct RoyaltyInfo {
-        address creator;
-        uint256 percentage; // in basis points (e.g., 500 = 5%)
-    }
+contract SuperwineNFT is ERC721Enumerable,ERC721Royalty, Ownable {
+   
 
     // mapping(uint256 => RoyaltyInfo) public royalties;
     string public baseURI;
@@ -18,8 +17,10 @@ contract SuperwineNFT is ERC721Enumerable, Ownable {
 
     event Minted(address indexed to, uint256 tokenId, string tokenURI);
 
-    constructor(string memory _name, string memory _symbol, string memory _baseURI2Set) ERC721(_name, _symbol) Ownable(msg.sender) {
+    constructor(string memory _name, string memory _symbol, string memory _baseURI2Set, address _feeCollector, uint96 _royalty) ERC721(_name, _symbol) Ownable(msg.sender) {
         baseURI=_baseURI2Set;
+        
+        _setDefaultRoyalty(_feeCollector,_royalty);
     }
 
     function _baseURI() internal view virtual override returns (string memory) {
@@ -56,8 +57,41 @@ contract SuperwineNFT is ERC721Enumerable, Ownable {
                 bytes(currentBaseURI).length > 0 
                 ? string(abi.encodePacked(currentBaseURI, Strings.toString(tokenId), baseExtension))
                 : "";
-        }
+    }
 
+
+    // Below solving ERC721Enumaerable and ERC721Royalty name conflicts
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC721Enumerable, ERC721Royalty)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
+    }
+
+    function _increaseBalance(address account, uint128 amount)
+        internal
+        virtual
+        override(ERC721Enumerable, ERC721)
+    {
+        ERC721Enumerable._increaseBalance(account, amount); // Call ERC721Enumerable implementation
+        ERC721._increaseBalance(account, amount);   // Call ERC721Royalty implementation
+    }
+
+    // Override supportsInterface to include both ERC721Enumerable and ERC721Royalty
+    
+    
+     function _update(address from, uint256 tokenId,address to)
+        internal
+        virtual
+        override(ERC721, ERC721Enumerable)
+        returns (address)
+    {
+        ERC721Enumerable._update(from, tokenId, to ); // Call ERC721Enumerable implementation
+        return to;
+    }
     
 
     // function royaltyInfo(uint256 tokenId) external view returns (address, uint256) {
